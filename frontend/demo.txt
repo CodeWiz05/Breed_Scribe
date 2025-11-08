@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Breed Scribe Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  body { background: #fafafa; color: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  .screen { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%; height: 100%; padding: 2rem; }
+  .active { display: flex; }
+  button { background: #007bff; color: #fff; border: none; border-radius: 6px; padding: 1rem 2rem; font-size: 1.1rem; cursor: pointer; margin-top: 1rem; }
+  button:hover { background: #0056c7; }
+
+  /* Landing */
+  .home h1 { font-size: 2.5rem; margin-bottom: 2rem; }
+
+  /* Image Input */
+  .image-input h2 { margin-bottom: 2rem; }
+
+  /* Guided Capture */
+  .camera-mock {
+    position: relative;
+    width: 80vw; max-width: 400px; height: 60vh;
+    background: #ccc url('https://placehold.co/400x300?text=Camera+View') center/cover no-repeat;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; overflow: hidden;
+  }
+  .camera-mock img.overlay {
+    position: absolute; width: 70%; opacity: 0.5;
+  }
+  .camera-mock p { position: absolute; bottom: 60px; background: rgba(255,255,255,0.8); padding: 0.5rem 1rem; border-radius: 4px; }
+  .camera-mock button { position: absolute; bottom: 10px; }
+
+  /* Loading Screen */
+  ul { list-style: none; margin-top: 2rem; text-align: left; }
+  li { font-size: 1.2rem; margin: 0.5rem 0; }
+
+  /* Result */
+  .result-img {
+    width: 200px; height: 200px; object-fit: cover;
+    border-radius: 10px; margin-bottom: 1rem;
+  }
+  .smart-assessment {
+    display: flex; align-items: center; justify-content: center;
+    gap: 1rem; padding: 1rem; border-radius: 50px; margin: 1rem 0;
+    border: 3px solid transparent; font-weight: bold;
+  }
+  .smart-assessment.green { color: #0a0; border-color: #0a0; }
+  .smart-assessment.yellow { color: #ffb300; border-color: #ffb300; }
+  .smart-assessment.red { color: #e53935; border-color: #e53935; }
+  .ring { width: 24px; height: 24px; border-radius: 50%; background: currentColor; }
+
+  pre.api-response {
+    background: #eee; padding: 1rem; border-radius: 8px;
+    text-align: left; width: 90%; max-width: 400px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Home -->
+<div id="home" class="screen home active">
+  <h1>Breed Scribe</h1>
+  <button onclick="navigate('image-input')">Start New Identification</button>
+</div>
+
+<!-- Image Input -->
+<div id="image-input" class="screen image-input">
+  <h2>Select Image Source</h2>
+  <button onclick="navigate('guided-capture')">Take New Photo</button>
+  <button onclick="navigate('loading')">Upload from Gallery</button>
+</div>
+
+<!-- Guided Capture -->
+<div id="guided-capture" class="screen guided-capture">
+  <div class="camera-mock">
+    <img src="https://placehold.co/300x200?text=Cow+Overlay" class="overlay" alt="Cow Overlay" />
+    <p>Please align the animal's side profile in the guide.</p>
+    <button onclick="navigate('loading')">Capture</button>
+  </div>
+</div>
+
+<!-- Smart Loading Screen -->
+<div id="loading" class="screen loading">
+  <h2>Processing...</h2>
+  <ul id="checklist">
+    <li>[ ] Image Uploaded</li>
+    <li>[ ] Analyzing Body Structure...</li>
+    <li>[ ] Identifying Breed...</li>
+    <li>[ ] Generating Report...</li>
+  </ul>
+</div>
+
+<!-- Result Card -->
+<div id="result" class="screen result">
+  <img src="https://placehold.co/200x200?text=Cow+Image" alt="Uploaded Image" class="result-img" />
+  <h3>Breed: Gir (53% Confidence)</h3>
+
+  <div id="assessment" class="smart-assessment">
+    <div class="ring"></div>
+    <span id="atc-text">High Dairy Type</span>
+  </div>
+
+  <pre class="api-response">
+{
+  "breed": "Gir",
+  "confidence": 0.53,
+  "atc_lite": "High Dairy Type",
+  "body_structure": "Strong with defined hump"
+}
+  </pre>
+
+  <button onclick="navigate('home')">Start Over</button>
+</div>
+
+<script>
+  const screens = document.querySelectorAll('.screen');
+
+  function navigate(targetId) {
+    screens.forEach(s => s.classList.remove('active'));
+    document.getElementById(targetId).classList.add('active');
+
+    if (targetId === 'loading') startLoadingAnimation();
+    if (targetId === 'result') styleAssessment();
+  }
+
+  function startLoadingAnimation() {
+    const steps = document.querySelectorAll('#checklist li');
+    steps.forEach(s => s.textContent = s.textContent.replace('[✓]', '[ ]'));
+    let i = 0;
+    function animate() {
+      if (i < steps.length) {
+        steps[i].textContent = steps[i].textContent.replace('[ ]', '[✓]');
+        i++;
+        setTimeout(animate, 1000);
+      } else {
+        navigate('result');
+      }
+    }
+    animate();
+  }
+
+  function styleAssessment() {
+    const atc = document.getElementById('atc-text').textContent;
+    const assess = document.getElementById('assessment');
+    assess.classList.remove('green','yellow','red');
+    if (atc.includes('High Dairy')) assess.classList.add('green');
+    else if (atc.includes('Moderate')) assess.classList.add('yellow');
+    else assess.classList.add('red');
+  }
+</script>
+</body>
+</html>
