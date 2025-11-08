@@ -1,0 +1,63 @@
+.capture-container {
+  position: relative; /* This allows us to position children absolutely */
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Hide anything that goes off-screen */
+  background-color: #000;
+}
+
+.camera-view {
+  /* This div is the black background  */
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: #333; /* A dark grey, like a camera feed */
+}
+
+.overlay-image {
+  /* This is the cow silhouette  */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* This perfectly centers the image */
+  width: 80%; /* Make it large */
+  opacity: 0.5; /* This makes it semi-transparent  */
+  z-index: 10; /* Make sure it's on top of the camera-view */
+}
+
+.guide-text {
+  /* This is the instruction text  */
+  position: absolute;
+  top: 15%; /* Position it near the top */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  z-index: 20; /* On top of everything else */
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7); /* Make it readable */
+}
+
+.capture-button {
+  /* This is the shutter button  */
+  position: absolute;
+  bottom: 50px; /* Position it at the bottom-center */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 70px;
+  background-color: #f1f1f1;
+  border-radius: 50%; /* Makes it a circle */
+  border: 4px solid white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  cursor: pointer;
+  z-index: 20;
+}
+
+.capture-button:hover {
+  background-color: #ddd;
+}

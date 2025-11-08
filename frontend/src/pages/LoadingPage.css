@@ -1,0 +1,39 @@
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f4f4f4;
+}
+
+.loading-box {
+  padding: 30px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 400px;
+}
+
+.loading-box h2 {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.loading-box ul {
+  list-style: none; /* Remove default bullet points */
+  padding: 0;
+}
+
+.loading-step {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  opacity: 0.3; /* Start as "dimmed" */
+  transition: opacity 0.5s ease-in-out; /* Smooth transition */
+}
+
+/* This is the style for the "checked" items */
+.loading-step.checked {
+  opacity: 1.0; /* Make it fully visible */
+  font-weight: bold;
+}
