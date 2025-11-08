@@ -1,0 +1,378 @@
+import React, { useState, useRef, useEffect } from "react";
+
+/**
+ * BreedScribe Demo — Single-file React component (Tailwind CSS required in host app)
+ * - No login
+ * - Flow: Landing -> Image Input (Take / Upload) -> Guided Capture (pretend camera + cow overlay)
+ *   -> Smart Loading (animated checklist) -> Result Card (full fake API response + ATC-Lite visualization)
+ *
+ * How to use: Drop this component into a React app that supports Tailwind CSS and render <BreedScribeDemo />.
+ *
+ * Notes:
+ * - "Take Photo" opens a pretend camera screen (no real camera) to demonstrate guided capture UI.
+ * - Upload uses a normal file input and shows an image preview.
+ * - The loading screen animates checklist items with 1s staggered timing.
+ * - Result card shows the uploaded/captured image, the breed (Gir 53%), and a color-coded ATC-Lite badge.
+ */
+
+export default function BreedScribeDemo() {
+  const [stage, setStage] = useState("landing"); // landing | input | guided | loading | result
+  const [imageDataUrl, setImageDataUrl] = useState(null);
+  const [fakeApiResponse, setFakeApiResponse] = useState(null);
+  const [checklistIndex, setChecklistIndex] = useState(-1);
+  const fileInputRef = useRef();
+
+  // Fake ATC-Lite decision function (very simple rule as requested)
+  function atcColor(atc_score_text) {
+    if (!atc_score_text) return "gray";
+    if (atc_score_text.includes("High Dairy")) return "green";
+    if (atc_score_text.includes("Medium")) return "yellow";
+    return "red";
+  }
+
+  // Utility: read file and set preview
+  function handleFileUpload(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageDataUrl(e.target.result);
+      // move to loading to simulate analysis
+      setStage("loading");
+      startFakeAnalysis(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Simulate fake API analysis pipeline and produce a fake response
+  function startFakeAnalysis(image) {
+    setChecklistIndex(-1);
+    // animate checklist then produce results
+    const checklist = [
+      "Image Uploaded",
+      "Analyzing Body Structure...",
+      "Identifying Breed...",
+      "Generating Report...",
+    ];
+
+    let idx = 0;
+    const interval = setInterval(() => {
+      setChecklistIndex((i) => i + 1);
+      idx++;
+      if (idx >= checklist.length) {
+        clearInterval(interval);
+        // small delay so animation completes visibly
+        setTimeout(() => {
+          // create fake API response (ATC-Lite included)
+          const fake = {
+            input_image: image,
+            breed: {
+              name: "Gir",
+              confidence: 0.53,
+            },
+            atc_lite: {
+              score_text: "High Dairy Type",
+              score_value: 0.87,
+              components: {
+                body_depth: "High",
+                udder_attachment: "Strong",
+                angularity: "Moderate",
+              },
+            },
+            notes: "This is a demo response. Real model outputs will vary.",
+            timestamp: new Date().toISOString(),
+          };
+          setFakeApiResponse(fake);
+          setStage("result");
+          setChecklistIndex(-1);
+        }, 700);
+      }
+    }, 1000);
+  }
+
+  // Capture in pretend camera (just uses a placeholder silhouette + example image or blank canvas)
+  function handlePretendCapture() {
+    // For demo, generate a simple placeholder image using canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 800;
+    const ctx = canvas.getContext("2d");
+    // background
+    ctx.fillStyle = "#f3f4f6";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // draw a simple placeholder cow-ish shape (not realistic) and horizon
+    ctx.fillStyle = "#cbb79a";
+    ctx.fillRect(100, 450, 1000, 220); // body block
+    ctx.fillStyle = "#8b5e3c";
+    ctx.fillRect(200, 420, 60, 60); // head block
+    // make the imageDataUrl and continue
+    const data = canvas.toDataURL("image/png");
+    setImageDataUrl(data);
+    setStage("loading");
+    startFakeAnalysis(data);
+  }
+
+  // Share / copy results text
+  function copyResultsText() {
+    if (!fakeApiResponse) return;
+    const txt = `Breed: ${fakeApiResponse.breed.name} (${Math.round(
+      fakeApiResponse.breed.confidence * 100
+    )}% confidence)\nATC-Lite: ${fakeApiResponse.atc_lite.score_text} (${
+      fakeApiResponse.atc_lite.score_value
+    })`;
+    navigator.clipboard?.writeText(txt);
+    alert("Result copied to clipboard (demo)");
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6">
+        {/* ----- Landing ----- */}
+        {stage === "landing" && (
+          <div className="text-center">
+            <h1 className="text-4xl font-extrabold mb-2">Breed Scribe</h1>
+            <p className="text-sm text-slate-500 mb-6">Quick demo — cattle breed identification (prototype)</p>
+            <button
+              onClick={() => setStage("input")}
+              className="px-6 py-4 bg-blue-600 text-white rounded-xl text-lg font-semibold shadow hover:bg-blue-700"
+            >
+              Start New Identification
+            </button>
+            <p className="text-xs text-slate-400 mt-4">No login required — demo only</p>
+          </div>
+        )}
+
+        {/* ----- Input Selection ----- */}
+        {stage === "input" && (
+          <div>
+            <h2 className="text-2xl font-bold">Add an image</h2>
+            <p className="text-sm text-slate-500 mb-4">Choose how you'd like to provide the animal photo.</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={() => setStage("guided")}
+                className="p-6 bg-white border rounded-xl shadow-sm hover:shadow-md flex flex-col items-center justify-center"
+              >
+                <svg className="w-12 h-12 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M3 7h2l2-3h6l2 3h2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                  <rect x="3" y="7" width="18" height="13" rx="2" strokeWidth={1.5} />
+                </svg>
+                <div className="text-sm font-medium">Take New Photo</div>
+                <div className="text-xs text-slate-400">Guided capture (mock camera)</div>
+              </button>
+
+              <label className="p-6 bg-white border rounded-xl shadow-sm cursor-pointer flex flex-col items-center justify-center">
+                <svg className="w-12 h-12 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 15V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                  <rect x="3" y="11" width="18" height="8" rx="2" strokeWidth={1.5} />
+                </svg>
+                <div className="text-sm font-medium">Upload from Gallery</div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleFileUpload(f);
+                  }}
+                />
+                <div className="text-xs text-slate-400 mt-2">Choose a photo to analyze</div>
+              </label>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3">
+              <button onClick={() => setStage("landing")} className="text-sm text-slate-500">← Back</button>
+            </div>
+          </div>
+        )}
+
+        {/* ----- Guided Capture (Pretend Camera + Cow Overlay) ----- */}
+        {stage === "guided" && (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Guided Capture</h2>
+              <button onClick={() => setStage("input")} className="text-sm text-slate-500">Cancel</button>
+            </div>
+
+            <div className="relative bg-black rounded-lg overflow-hidden" style={{ height: 420 }}>
+              {/* pretend camera view background */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center opacity-80">
+                  <div className="text-center text-white select-none">
+                    <div className="text-2xl font-bold">Pretend Camera View</div>
+                    <div className="text-sm mt-2">This is a mock camera for the demo — the capture button below will proceed.</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* semi-transparent cow silhouette overlay (inline SVG) */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <svg viewBox="0 0 400 300" className="w-2/3 h-auto opacity-70" preserveAspectRatio="xMidYMid meet">
+                  <g transform="translate(0,20)">
+                    {/* Very simple illustrative cow silhouette */}
+                    <path d="M30 180c30-20 80-20 120-10s60 10 100 0 50-40 80-45 20 10 30 20 10 30 10 30 10 20-10 30-60 10-100 10-90 0-120 10-70 10-100 0-20-40-20-40z" fill="#ffffff" opacity="0.9" />
+                    <ellipse cx="140" cy="210" rx="30" ry="15" fill="#ffffff" opacity="0.95" />
+                  </g>
+                </svg>
+              </div>
+
+              {/* capture controls */}
+              <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setStage("input")}
+                  className="bg-white/10 text-white px-4 py-2 rounded-lg border"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handlePretendCapture}
+                  className="bg-red-500 text-white px-6 py-3 rounded-full shadow-lg"
+                >
+                  Capture
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-4 text-sm text-slate-500">Please align the animal's side profile in the guide.
+            </p>
+          </div>
+        )}
+
+        {/* ----- Smart Loading Screen ----- */}
+        {stage === "loading" && (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold mb-4">Analyzing image...</h2>
+            <div className="mx-auto w-72 bg-slate-50 rounded-lg p-4 shadow">
+              <ChecklistAnimated activeIndex={checklistIndex} />
+            </div>
+            <p className="text-sm text-slate-400 mt-4">This screen builds trust by showing internal steps.</p>
+          </div>
+        )}
+
+        {/* ----- Result Card ----- */}
+        {stage === "result" && fakeApiResponse && (
+          <div>
+            <div className="flex items-start gap-6">
+              <div className="w-2/5">
+                <div className="bg-slate-100 rounded-xl overflow-hidden border">
+                  {imageDataUrl ? (
+                    <img src={imageDataUrl} alt="uploaded" className="w-full h-56 object-cover" />
+                  ) : (
+                    <div className="w-full h-56 flex items-center justify-center text-slate-400">No image</div>
+                  )}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={() => { setStage('input'); setFakeApiResponse(null); }} className="px-3 py-2 bg-white border rounded">New ID</button>
+                  <button onClick={copyResultsText} className="px-3 py-2 bg-blue-600 text-white rounded">Share</button>
+                </div>
+              </div>
+
+              <div className="flex-1">
+                <h3 className="text-xl font-bold">Result</h3>
+                <div className="mt-3 bg-white border rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm text-slate-500">Breed</div>
+                      <div className="text-2xl font-semibold">{fakeApiResponse.breed.name} <span className="text-base text-slate-400">({Math.round(fakeApiResponse.breed.confidence*100)}% Confidence)</span></div>
+                    </div>
+
+                    {/* ATC-Lite visual badge */}
+                    <div className="flex items-center gap-3">
+                      <ATCBadge atc={fakeApiResponse.atc_lite} />
+                    </div>
+                  </div>
+
+                  {/* Full API JSON-like display (for demo, prettified) */}
+                  <pre className="mt-4 bg-slate-50 p-3 rounded text-xs overflow-auto">{JSON.stringify(fakeApiResponse, null, 2)}</pre>
+                </div>
+
+                {/* Smart Assessment — Visual, Color-Coded ATC-Lite Score (extra callout) */}
+                <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-white to-slate-50 border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm text-slate-500">Smart Assessment (ATC-Lite)</div>
+                      <div className="text-lg font-semibold">{fakeApiResponse.atc_lite.score_text}</div>
+                      <div className="text-xs text-slate-400">Score: {(fakeApiResponse.atc_lite.score_value*100).toFixed(0)}%</div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {/* large ring/badge */}
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center ring-4 ${atcColor(fakeApiResponse.atc_lite.score_text) === 'green' ? 'ring-green-400' : atcColor(fakeApiResponse.atc_lite.score_text) === 'yellow' ? 'ring-amber-300' : 'ring-red-300'}`}>
+                        <div className="text-xs text-slate-700 font-bold">{fakeApiResponse.atc_lite.score_text.split(' ')[0]}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* small component breakdown */}
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                    {Object.entries(fakeApiResponse.atc_lite.components).map(([k,v]) => (
+                      <div key={k} className="bg-white p-3 rounded shadow-sm border">
+                        <div className="text-xs text-slate-400">{k.replace('_',' ')}</div>
+                        <div className="font-medium">{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="mt-6 text-right">
+              <button onClick={() => { setStage('landing'); setFakeApiResponse(null); setImageDataUrl(null); }} className="px-4 py-2 bg-slate-100 rounded">Finish</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+/**
+ * ChecklistAnimated — shows the 4-step checklist and checks them off one second after the other.
+ * - activeIndex controls how many are checked (-1 = none, 0 = first checked, etc.)
+ */
+function ChecklistAnimated({ activeIndex }) {
+  const items = ["Image Uploaded", "Analyzing Body Structure...", "Identifying Breed...", "Generating Report..."];
+  return (
+    <div className="space-y-2 text-left">
+      {items.map((it, i) => (
+        <div key={it} className="flex items-center gap-3">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${i <= activeIndex ? 'bg-green-100 border-green-300' : 'bg-white border-slate-200'}`}>
+            {i <= activeIndex ? (
+              <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+            ) : (
+              <div className="w-2 h-2 rounded-full bg-slate-200" />
+            )}
+          </div>
+          <div className={`text-sm ${i <= activeIndex ? 'text-slate-700' : 'text-slate-400'}`}>{it}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+/**
+ * ATCBadge — small badge that uses the simple rule: if (atc_score.includes("High Dairy")) return "green";
+ */
+function ATCBadge({ atc }) {
+  const color = atcColorLocal(atc?.score_text);
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${color === 'green' ? 'bg-green-500' : color === 'yellow' ? 'bg-amber-400' : 'bg-red-500'}`}>
+        {atc?.score_text?.split(' ')[0] ?? 'N/A'}
+      </div>
+      <div className="text-sm text-slate-600">
+        <div className="font-semibold">{atc?.score_text}</div>
+        <div className="text-xs text-slate-400">ATC-Lite</div>
+      </div>
+    </div>
+  );
+}
+
+function atcColorLocal(text) {
+  if (!text) return 'gray';
+  if (text.includes('High Dairy')) return 'green';
+  if (text.includes('Medium')) return 'yellow';
+  return 'red';
+}
